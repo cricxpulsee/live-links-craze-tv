@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA Live </title>
+
+<!-- SEO & Open Graph -->
+<meta name="description" content="Watch live football streams on Live Links Free HD streaming with real-time updates.">
+<meta property="og:title" content="Football Live">
+<meta property="og:description" content="Free live football streams, highlights & match updates.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://goalpulse.live">
+<meta name="theme-color" content="#050e1a">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/controls.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.ui.min.js"></script>
+
+<style>
+  :root {
+    --bg: #050e1a;
+    --surface: #0a1929;
+    --surface2: #0e2138;
+    --accent: #00a8e8;
+    --accent2: #74c8f5;
+    --glow: rgba(0,168,232,0.28);
+    --red: #ef4444;
+    --argentina: #6ec6f5;
+    --argentina-dark: #0077b6;
+    --text: #e8f4fd;
+    --muted: #7baec8;
+    --border: rgba(110,198,245,0.08);
+    --border-strong: rgba(110,198,245,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 60px;
+    overflow-x: hidden;
+  }
+
+  /* ── 45° ROTATED DIAMOND/CROSS GRID ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -100%;
+    width: 300%;
+    height: 300%;
+    background-image:
+      linear-gradient(rgba(110,198,245,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110,198,245,0.07) 1px, transparent 1px);
+    background-size: 42px 42px;
+    transform: rotate(45deg);
+    transform-origin: center center;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,168,232,0.14) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  .navbar {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 0;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #fff 30%, var(--argentina));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+  }
+  .logo::after {
+    content: 'LIVE';
+    position: absolute;
+    top: -4px;
+    right: -36px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    background: var(--red);
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: #fff;
+    background-clip: unset;
+    color: #fff;
+    padding: 2px 5px;
+    border-radius: 4px;
+    animation: pulse-badge 1.5s infinite;
+  }
+
+  @keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .nav-dot {
+    width: 8px; height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--red);
+    animation: pulse-badge 1.5s infinite;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    max-width: 520px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── PLAYER ── */
+  .player-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    box-shadow:
+      0 0 0 1px var(--border),
+      0 0 40px var(--glow),
+      0 24px 48px rgba(0,0,0,0.6);
+  }
+  .player-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 1.5px rgba(0,168,232,0.28);
+    pointer-events: none;
+  }
+  #shaka-container {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  #shaka-container video {
+    width: 100%;
+    height: 100%;
+    border: none;
+    z-index: 1;
+  }
+
+  /* Live label */
+  .player-label {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--argentina);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .player-label span {
+    width: 6px; height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse-badge 1.5s infinite;
+  }
+
+  /* Loading spinner overlay */
+  .player-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    gap: 12px;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .player-loader.hidden { opacity: 0; pointer-events: none; }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: var(--argentina);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader-text {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── ERROR BOX ── */
+  .error-box {
+    display: none;
+    background: rgba(239,68,68,0.10);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .retry-btn {
+    display: inline-block;
+    margin-top: 10px;
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.35);
+    color: #fca5a5;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .retry-btn:hover { background: rgba(239,68,68,0.25); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 14px;
+  }
+
+  /* ── TELEGRAM BUTTON ── */
+  .community-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, #071e38, #04152a);
+    border: 1px solid rgba(0,168,232,0.22);
+    border-radius: 14px;
+    padding: 14px 18px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .community-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,168,232,0.12), transparent);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .community-btn:hover::before { opacity: 1; }
+  .community-btn:hover {
+    border-color: rgba(0,168,232,0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,168,232,0.18);
+  }
+  .community-btn:focus-visible {
+    outline: 2px solid var(--argentina);
+    outline-offset: 2px;
+  }
+  .community-btn .left { display: flex; align-items: center; gap: 12px; }
+  .community-btn .icon-wrap {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: rgba(0,168,232,0.14);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .community-btn svg { width: 22px; height: 22px; fill: var(--argentina); }
+  .community-btn .label { font-size: 15px; font-weight: 700; }
+  .community-btn .sublabel { font-size: 12px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .community-btn .arrow {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(0,168,232,0.14);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .community-btn .arrow svg { width: 14px; height: 14px; fill: var(--argentina); }
+
+  /* ── SHARE BUTTON ── */
+  .share-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--argentina-dark));
+    border: none;
+    border-radius: 14px;
+    padding: 15px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 20px rgba(0,168,232,0.35);
+    letter-spacing: 0.3px;
+  }
+  .share-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,168,232,0.5); }
+  .share-btn:active { transform: translateY(0); }
+  .share-btn:focus-visible { outline: 2px solid var(--argentina); outline-offset: 2px; }
+  .share-btn svg { width: 18px; height: 18px; }
+
+  .share-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .share-note svg { width: 12px; height: 12px; fill: var(--muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 5;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    padding-bottom: 10px;
+    line-height: 1.8;
+  }
+  footer strong { font-weight: 700; display: inline-block; margin-top: 3px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.80);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+  .modal {
+    background: var(--surface2);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 100%; max-width: 340px;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 60px var(--glow);
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .modal-icon {
+    width: 60px; height: 60px;
+    background: rgba(0,168,232,0.10);
+    border: 1px solid rgba(0,168,232,0.22);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .modal-icon svg { width: 30px; height: 30px; fill: var(--argentina); }
+  .modal h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .modal p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+
+  .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+
+  .modal-primary {
+    background: linear-gradient(135deg, var(--accent), var(--argentina-dark));
+    border: none; border-radius: 12px; padding: 14px;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(0,168,232,0.30);
+  }
+  .modal-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,168,232,0.45); }
+  .modal-primary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  .modal-secondary {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 13px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .modal-secondary:hover { background: var(--surface); color: var(--text); }
+  .modal-secondary:focus-visible { outline: 2px solid var(--argentina); outline-offset: 2px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #071e38;
+    border: 1px solid var(--argentina);
+    color: var(--argentina);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 14px; font-weight: 600;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SHAKA UI TWEAK ── */
+  .shaka-center-controls { display: none !important; }
+
+  /* ── REDUCED MOTION ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="joinModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="modal-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M9.04 15.47l-.4 5.65c.57 0 .82-.25 1.13-.55l2.72-2.6 5.64 4.13c1.03.57 1.76.27 2.04-.95l3.7-17.37c.36-1.65-.6-2.3-1.6-1.92L1.66 9.74c-1.58.61-1.55 1.5-.27 1.9l5.58 1.74L19.46 5.6c.58-.36 1.1-.16.67.2"/></svg>
+    </div>
+    <h2 id="modalTitle">Join Telegram</h2>
+    <p>Get free stream links, live match updates</p>
+    <div class="modal-actions">
+      <button class="modal-primary" id="modalJoin">Join Telegram Channel</button>
+      <button class="modal-secondary" id="modalSkip">Already joined</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite">✓ Link copied to clipboard</div>
+
+<!-- NAV -->
+<nav class="navbar" aria-label="Site header">
+  <div class="logo" aria-label="Football">Football</div>
+  <div class="nav-dot" aria-hidden="true"></div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="container">
+
+  <!-- PLAYER -->
+  <div class="player-wrap" role="region" aria-label="Live stream player">
+    <div class="player-label" aria-hidden="true"><span></span> Live Stream</div>
+
+    <!-- Loading spinner -->
+    <div class="player-loader" id="playerLoader">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="loader-text">Loading stream…</span>
+    </div>
+
+    <div id="shaka-container" data-shaka-player-container style="width:100%;height:100%;position:absolute;inset:0;z-index:1;">
+      <video
+        id="stream-player"
+        data-shaka-player
+        playsinline
+        aria-label="Live football stream"
+        style="width:100%;height:100%;"
+      ></video>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="error-box" id="errorBox" role="alert">
+    <div id="errorMessage">⚠ Stream unavailable. Please try again.</div>
+    <button class="retry-btn" id="retryBtn">Retry</button>
+  </div>
+
+  <div class="divider" aria-hidden="true"></div>
+
+  <!-- TELEGRAM CARD -->
+  <div class="card">
+    <div class="card-title">Telegram Channel</div>
+    <a
+      href="https://t.me/+OGKhrSr4LYI3ODJl"
+      class="community-btn"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Join Live Links Telegram channel"
+    >
+      <div class="left">
+        <div class="icon-wrap" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9.04 15.47l-.4 5.65c.57 0 .82-.25 1.13-.55l2.72-2.6 5.64 4.13c1.03.57 1.76.27 2.04-.95l3.7-17.37c.36-1.65-.6-2.3-1.6-1.92L1.66 9.74c-1.58.61-1.55 1.5-.27 1.9l5.58 1.74L19.46 5.6c.58-.36 1.1-.16.67.2"/></svg>
+        </div>
+        <div>
+          <div class="label">Telegram Channel</div>
+          <div class="sublabel">Stream links, highlights & live updates</div>
+        </div>
+      </div>
+      <div class="arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </div>
+    </a>
+  </div>
+
+  <div class="divider" aria-hidden="true">Share</div>
+
+  <!-- SHARE CARD -->
+  <div class="card">
+    <div class="card-title">Share this stream</div>
+    <button class="share-btn" id="shareBtn" aria-label="Share or copy stream link">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Share stream
+    </button>
+    <div class="share-note" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      Open in Chrome for best experience 
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  Made with ❤️ for football fans
+  <strong>© Kohlify</strong>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  const STREAM_CONFIG = {
+    mpdUrl: "https://a121aivottepl-a.akamaihd.net/gru-nitro/live/clients/dash/enc/jo3rmhhp2r/out/v1/50656942ce4e40a1be824c9d83578fe9/cenc.mpd",
+    licenseServer: "",
+    clearKeys: [
+      { keyId: "34475edab991ad5e92548aebd710410a", key: "501b209cccd323ac00bf5ac15b406cb4" }
+    ]
+  };
+
+  const modal        = document.getElementById("joinModal");
+  const errorBox     = document.getElementById("errorBox");
+  const errorMsg     = document.getElementById("errorMessage");
+  const playerLoader = document.getElementById("playerLoader");
+  const toast        = document.getElementById("toast");
+  const retryBtn     = document.getElementById("retryBtn");
+  const shareBtn     = document.getElementById("shareBtn");
+
+  let player = null;
+
+  // ─── MODAL
+  modal.addEventListener("click", function (e) {
+    if (e.target === modal) dismissModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modal && !modal.hidden) dismissModal();
+  });
+
+  document.getElementById("modalJoin").addEventListener("click", function () {
+    window.open("https://t.me/+OGKhrSr4LYI3ODJl", "_blank", "noopener,noreferrer");
+    dismissModal();
+  });
+  document.getElementById("modalSkip").addEventListener("click", dismissModal);
+
+  function dismissModal() {
+    if (!modal) return;
+    modal.style.animation = "fadeOut 0.2s ease forwards";
+    setTimeout(() => {
+      modal.hidden = true;
+      modal.style.display = "none";
+    }, 200);
+    try { sessionStorage.setItem("gp_joined", "1"); } catch (_) {}
+  }
+
+  try {
+    if (sessionStorage.getItem("gp_joined") === "1") {
+      modal.hidden = true;
+      modal.style.display = "none";
+    }
+  } catch (_) {}
+
+  // ─── PLAYER
+  async function initPlayer(config) {
+    shaka.polyfill.installAll();
+
+    if (!shaka.Player.isBrowserSupported()) {
+      showError("Your browser doesn't support this stream player. Try Chrome or Firefox.");
+      return;
+    }
+
+    const video     = document.getElementById("stream-player");
+    const container = document.getElementById("shaka-container");
+
+    player = new shaka.Player();
+    const ui = new shaka.ui.Overlay(player, container, video);
+    ui.configure({
+      addSeekBar: true,
+      controlPanelElements: ["play_pause", "time_and_duration", "spacer", "mute", "volume", "fullscreen"],
+      enableTooltips: false
+    });
+
+    await player.attach(video);
+    player.configure({ streaming: { useNativeHlsOnSafari: true } });
+
+    if (config.clearKeys && config.clearKeys.length > 0) {
+      const keys = {};
+      config.clearKeys.forEach(({ keyId, key }) => { keys[keyId] = key; });
+      player.configure({ drm: { clearKeys: keys } });
+    } else if (config.licenseServer) {
+      player.configure({ drm: { servers: { "com.widevine.alpha": config.licenseServer } } });
+    }
+
+    try {
+      await player.load(config.mpdUrl);
+      hideLoader();
+      video.play().catch(function (err) {
+        console.warn("Autoplay blocked:", err.message);
+      });
+    } catch (e) {
+      console.error("Stream load error:", e);
+      hideLoader();
+      showError("Stream unavailable. The link may have expired — check Telegram for a new one.");
+    }
+  }
+
+  function hideLoader() {
+    if (playerLoader) playerLoader.classList.add("hidden");
+  }
+
+  function showError(message) {
+    errorMsg.textContent = "⚠ " + message;
+    errorBox.style.display = "block";
+  }
+
+  // ─── RETRY
+  retryBtn.addEventListener("click", function () {
+    errorBox.style.display = "none";
+    playerLoader.classList.remove("hidden");
+    if (player) {
+      player.destroy().finally(function () {
+        player = null;
+        initPlayer(STREAM_CONFIG);
+      });
+    } else {
+      initPlayer(STREAM_CONFIG);
+    }
+  });
+
+  // ─── SHARE / COPY
+  shareBtn.addEventListener("click", function () {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({ title: "GoalPulse Live", url }).catch(function (err) {
+        if (err.name !== "AbortError") copyToClipboard(url);
+      });
+    } else {
+      copyToClipboard(url);
+    }
+  });
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showToast).catch(fallbackCopy.bind(null, text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;opacity:0;top:0;left:0;";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand("copy"); showToast(); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+
+  function showToast() {
+    toast.classList.add("show");
+    setTimeout(function () { toast.classList.remove("show"); }, 2500);
+  }
+
+  // ─── INIT
+  initPlayer(STREAM_CONFIG);
+
+})();
+</script>
+</body>
+</html>
